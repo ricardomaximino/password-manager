@@ -5,7 +5,7 @@ import pyperclip
 import json
 
 DARK_BLUE = "#035397"
-LIGH_BLUE = "#035397"
+LIGHT_BLUE = "#035397"
 FONT_NAME = "Courier"
 BACKGROUND = "white"
 LABEL_FONT = (FONT_NAME, 14, "bold")
@@ -38,6 +38,11 @@ def generate_password():
     pyperclip.copy(password)
 
 
+def confirmation(username, password):
+    message = f"These are the details information:\nUsername: {username}\nPassword: {password}\nThe information is correct?!"
+    return messagebox.askyesno(title="website", message=message)
+
+
 def save():
     website = website_entry.get()
     username = username_entry.get()
@@ -49,17 +54,42 @@ def save():
     if len(website) == 0 or len(password) == 0 or len(username) == 0:
         messagebox.showinfo(title="Oops", message="fill all the fields!")
     else:
-        with open("data.json", "r") as data_file:
-           json_data = json.load(data_file)
-           json_data.update(new_data)
-           print(json_data)
-        with open("data.json", "w") as data_file:
-           json.dump(new_data, data_file, indent=4)
-           is_correct = messagebox.askyesno(title="website", message=f"These are the details information:\nUsername: {username}\nPassword: {password}\nThe information is correct?!")
-           if is_correct:
-              clear()
+        try:
+            with open("data.json", "r") as data_file:
+                json_data = json.load(data_file)
+        except FileNotFoundError:
+            with open("data.json", "w") as data_file:
+                if confirmation(username, password):
+                    json.dump(new_data, data_file, indent=4)
+                else:
+                    json.dump({}, data_file, indent=4)
+        else:
+            json_data.update(new_data)
+            if confirmation(username, password):
+                with open("data.json", "w") as data_file:
+                    json.dump(json_data, data_file, indent=4)
+        finally:
+            clear()
 
 
+def search():
+    website = website_entry.get()
+    if len(website) > 0:
+        try:
+            with open("data.json", "r") as data_file:
+                json_data = json.load(data_file)
+        except FileNotFoundError:
+            messagebox.showinfo(f"There is no information stored to {website}")
+        else:
+            if website in json_data:
+                data = json_data.get(website)
+                username = data["username"]
+                password = data["password"]
+                messagebox.showinfo(title=website, message=f"Username: {username}\nPassword: {password}")
+            else:
+                messagebox.showinfo(f"There is no information stored to {website}")
+
+# GUI
 window = Tk()
 window.title("Password Manager")
 window.config(padx=50, pady=50, bg=BACKGROUND)
@@ -97,7 +127,7 @@ password_entry.config(width=36)
 password_entry.grid(row=4, column=1, padx=5, pady=15)
 
 # Buttons
-search_button = Button(text="Search", width=18, font=BUTTON_FONT, padx=5, pady=1)
+search_button = Button(text="Search", width=18, font=BUTTON_FONT, padx=5, pady=1, command=search)
 search_button.grid(row=2, column=2)
 
 generate_password_button = Button(text="Generate Password", font=BUTTON_FONT, padx=5, pady=1, command=generate_password)
